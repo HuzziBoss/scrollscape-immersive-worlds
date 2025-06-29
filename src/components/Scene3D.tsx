@@ -199,15 +199,15 @@ const GeometricNetwork = ({ scrollProgress }) => {
   );
 };
 
-// NEW: Animated floating text elements
+// Animated floating text elements
 const FloatingText = ({ scrollProgress }) => {
   const textRefs = useRef<THREE.Mesh[]>([]);
   
   const textElements = [
-    { text: "INNOVATION", position: [5, 8, -3], phase: 0.1 },
-    { text: "CREATIVITY", position: [-7, 6, 2], phase: 0.3 },
-    { text: "TECHNOLOGY", position: [3, -4, -8], phase: 0.5 },
-    { text: "FUTURE", position: [-5, -2, 5], phase: 0.7 }
+    { text: "INNOVATION", position: [5, 8, -3] as [number, number, number], phase: 0.1 },
+    { text: "CREATIVITY", position: [-7, 6, 2] as [number, number, number], phase: 0.3 },
+    { text: "TECHNOLOGY", position: [3, -4, -8] as [number, number, number], phase: 0.5 },
+    { text: "FUTURE", position: [-5, -2, 5] as [number, number, number], phase: 0.7 }
   ];
 
   useFrame((state) => {
@@ -254,12 +254,11 @@ const FloatingText = ({ scrollProgress }) => {
   );
 };
 
-// NEW: Energy orbs that pulse and connect
+// Energy orbs that pulse and connect
 const EnergyOrbs = ({ scrollProgress }) => {
   const orbRefs = useRef<THREE.Mesh[]>([]);
-  const connectionRefs = useRef<THREE.LineSegments[]>([]);
 
-  const orbPositions = [
+  const orbPositions: [number, number, number][] = [
     [4, 3, -2],
     [-6, -1, 4],
     [2, -5, -6],
