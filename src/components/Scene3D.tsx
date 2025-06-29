@@ -1,6 +1,6 @@
 
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Stars, Float, Text3D, Center, Html } from '@react-three/drei';
+import { OrbitControls, Stars, Float, Center, Html } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useRef, useMemo } from 'react';
 import * as THREE from 'three';
@@ -196,61 +196,6 @@ const GeometricNetwork = ({ scrollProgress }) => {
         />
       </lineSegments>
     </group>
-  );
-};
-
-// Animated floating text elements
-const FloatingText = ({ scrollProgress }) => {
-  const textRefs = useRef<THREE.Mesh[]>([]);
-  
-  const textElements = [
-    { text: "INNOVATION", position: [5, 8, -3] as [number, number, number], phase: 0.1 },
-    { text: "CREATIVITY", position: [-7, 6, 2] as [number, number, number], phase: 0.3 },
-    { text: "TECHNOLOGY", position: [3, -4, -8] as [number, number, number], phase: 0.5 },
-    { text: "FUTURE", position: [-5, -2, 5] as [number, number, number], phase: 0.7 }
-  ];
-
-  useFrame((state) => {
-    const time = state.clock.elapsedTime;
-    textRefs.current.forEach((mesh, index) => {
-      if (mesh) {
-        const element = textElements[index];
-        const visibility = scrollProgress > element.phase ? 1 : 0;
-        
-        mesh.rotation.y = time * 0.5 + index;
-        mesh.rotation.x = Math.sin(time + index) * 0.3;
-        mesh.scale.setScalar(THREE.MathUtils.lerp(0, 1.5, visibility));
-        
-        const material = mesh.material as THREE.MeshStandardMaterial;
-        material.opacity = visibility * 0.8;
-      }
-    });
-  });
-
-  return (
-    <>
-      {textElements.map((element, index) => (
-        <Float key={index} speed={2} rotationIntensity={0.3} floatIntensity={1}>
-          <Center position={element.position}>
-            <Text3D
-              ref={(el) => { if (el) textRefs.current[index] = el; }}
-              font="/fonts/helvetiker_regular.typeface.json"
-              size={0.8}
-              height={0.1}
-            >
-              {element.text}
-              <meshStandardMaterial
-                color="#ffffff"
-                emissive="#4488ff"
-                emissiveIntensity={0.3}
-                transparent
-                opacity={0}
-              />
-            </Text3D>
-          </Center>
-        </Float>
-      ))}
-    </>
   );
 };
 
@@ -452,7 +397,6 @@ const Scene3D = ({ scrollProgress }) => {
       <BuildingStructure scrollProgress={scrollProgress} />
       <DNASpiral scrollProgress={scrollProgress} />
       <GeometricNetwork scrollProgress={scrollProgress} />
-      <FloatingText scrollProgress={scrollProgress} />
       <EnergyOrbs scrollProgress={scrollProgress} />
 
       {/* Enhanced central focal element */}
