@@ -1,6 +1,6 @@
 
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Stars, Float, Text3D, Center } from '@react-three/drei';
+import { OrbitControls, Stars, Float, Text3D, Center, Html } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useRef, useMemo } from 'react';
 import * as THREE from 'three';
@@ -20,7 +20,8 @@ const BuildingStructure = ({ scrollProgress }) => {
           const progress = Math.max(0, scrollProgress * 4 - index * 0.1);
           mesh.scale.y = THREE.MathUtils.lerp(0, 1, progress);
           mesh.position.y = THREE.MathUtils.lerp(-5, index * 0.5, progress);
-          mesh.material.opacity = THREE.MathUtils.lerp(0, 0.8, progress);
+          const material = mesh.material as THREE.MeshStandardMaterial;
+          material.opacity = THREE.MathUtils.lerp(0, 0.8, progress);
         }
       });
     }
@@ -198,20 +199,126 @@ const GeometricNetwork = ({ scrollProgress }) => {
   );
 };
 
-// Particle field that responds to scroll
+// NEW: Animated floating text elements
+const FloatingText = ({ scrollProgress }) => {
+  const textRefs = useRef<THREE.Mesh[]>([]);
+  
+  const textElements = [
+    { text: "INNOVATION", position: [5, 8, -3], phase: 0.1 },
+    { text: "CREATIVITY", position: [-7, 6, 2], phase: 0.3 },
+    { text: "TECHNOLOGY", position: [3, -4, -8], phase: 0.5 },
+    { text: "FUTURE", position: [-5, -2, 5], phase: 0.7 }
+  ];
+
+  useFrame((state) => {
+    const time = state.clock.elapsedTime;
+    textRefs.current.forEach((mesh, index) => {
+      if (mesh) {
+        const element = textElements[index];
+        const visibility = scrollProgress > element.phase ? 1 : 0;
+        
+        mesh.rotation.y = time * 0.5 + index;
+        mesh.rotation.x = Math.sin(time + index) * 0.3;
+        mesh.scale.setScalar(THREE.MathUtils.lerp(0, 1.5, visibility));
+        
+        const material = mesh.material as THREE.MeshStandardMaterial;
+        material.opacity = visibility * 0.8;
+      }
+    });
+  });
+
+  return (
+    <>
+      {textElements.map((element, index) => (
+        <Float key={index} speed={2} rotationIntensity={0.3} floatIntensity={1}>
+          <Center position={element.position}>
+            <Text3D
+              ref={(el) => { if (el) textRefs.current[index] = el; }}
+              font="/fonts/helvetiker_regular.typeface.json"
+              size={0.8}
+              height={0.1}
+            >
+              {element.text}
+              <meshStandardMaterial
+                color="#ffffff"
+                emissive="#4488ff"
+                emissiveIntensity={0.3}
+                transparent
+                opacity={0}
+              />
+            </Text3D>
+          </Center>
+        </Float>
+      ))}
+    </>
+  );
+};
+
+// NEW: Energy orbs that pulse and connect
+const EnergyOrbs = ({ scrollProgress }) => {
+  const orbRefs = useRef<THREE.Mesh[]>([]);
+  const connectionRefs = useRef<THREE.LineSegments[]>([]);
+
+  const orbPositions = [
+    [4, 3, -2],
+    [-6, -1, 4],
+    [2, -5, -6],
+    [-3, 7, 1],
+    [8, -3, -4]
+  ];
+
+  useFrame((state) => {
+    const time = state.clock.elapsedTime;
+    
+    orbRefs.current.forEach((orb, index) => {
+      if (orb) {
+        const pulseFactor = Math.sin(time * 2 + index) * 0.3 + 1;
+        orb.scale.setScalar(pulseFactor * (0.5 + scrollProgress * 0.5));
+        
+        const material = orb.material as THREE.MeshStandardMaterial;
+        material.emissiveIntensity = 0.5 + Math.sin(time * 3 + index) * 0.3;
+      }
+    });
+  });
+
+  return (
+    <group>
+      {orbPositions.map((position, index) => (
+        <Float key={index} speed={1.5} rotationIntensity={0} floatIntensity={2}>
+          <mesh
+            ref={(el) => { if (el) orbRefs.current[index] = el; }}
+            position={position}
+          >
+            <sphereGeometry args={[0.3, 16, 16]} />
+            <meshStandardMaterial
+              color={new THREE.Color().setHSL(index * 0.2, 0.8, 0.6)}
+              emissive={new THREE.Color().setHSL(index * 0.2, 0.5, 0.3)}
+              emissiveIntensity={0.5}
+              transparent
+              opacity={0.9}
+            />
+          </mesh>
+        </Float>
+      ))}
+    </group>
+  );
+};
+
+// Enhanced particle field with trails
 const DynamicParticleField = ({ scrollProgress }) => {
   const pointsRef = useRef<THREE.Points>(null);
   
   const particleData = useMemo(() => {
-    const positions = new Float32Array(3000 * 3);
-    const colors = new Float32Array(3000 * 3);
+    const positions = new Float32Array(5000 * 3);
+    const colors = new Float32Array(5000 * 3);
     
-    for (let i = 0; i < 3000; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 100;
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 100;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 100;
+    for (let i = 0; i < 5000; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * 150;
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 150;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 150;
       
-      colors[i * 3] = Math.random();
+      const hue = Math.random();
+      colors[i * 3] = hue;
       colors[i * 3 + 1] = Math.random() * 0.5 + 0.5;
       colors[i * 3 + 2] = 1;
     }
@@ -222,13 +329,13 @@ const DynamicParticleField = ({ scrollProgress }) => {
   useFrame((state) => {
     if (pointsRef.current) {
       const time = state.clock.elapsedTime;
-      pointsRef.current.rotation.x = time * 0.02;
-      pointsRef.current.rotation.y = time * 0.03;
+      pointsRef.current.rotation.x = time * 0.01;
+      pointsRef.current.rotation.y = time * 0.02;
       
-      // Update material based on scroll
+      // Dynamic color transitions based on scroll
       const material = pointsRef.current.material as THREE.PointsMaterial;
-      material.size = 0.05 + scrollProgress * 0.15;
-      material.opacity = 0.4 + scrollProgress * 0.6;
+      material.size = 0.03 + scrollProgress * 0.12;
+      material.opacity = 0.3 + scrollProgress * 0.7;
     }
   });
 
@@ -249,17 +356,17 @@ const DynamicParticleField = ({ scrollProgress }) => {
         />
       </bufferGeometry>
       <pointsMaterial 
-        size={0.05}
+        size={0.03}
         vertexColors
         transparent
-        opacity={0.4}
+        opacity={0.3}
         blending={THREE.AdditiveBlending}
       />
     </points>
   );
 };
 
-// Camera controller with smoother movements
+// Enhanced camera controller with smoother movements
 const CameraController = ({ scrollProgress }) => {
   const { camera } = useThree();
   
@@ -267,90 +374,100 @@ const CameraController = ({ scrollProgress }) => {
     const progress = scrollProgress;
     
     if (progress <= 0.2) {
-      // Opening view
+      // Opening cinematic sweep
       const localProgress = progress / 0.2;
-      camera.position.z = THREE.MathUtils.lerp(12, 8, localProgress);
-      camera.position.y = THREE.MathUtils.lerp(0, 3, localProgress);
-      camera.position.x = THREE.MathUtils.lerp(0, -2, localProgress);
+      camera.position.z = THREE.MathUtils.lerp(15, 8, localProgress);
+      camera.position.y = THREE.MathUtils.lerp(5, 3, localProgress);
+      camera.position.x = THREE.MathUtils.lerp(-3, -2, localProgress);
     } else if (progress <= 0.4) {
-      // Building construction view
+      // Dynamic building view with rotation
       const localProgress = (progress - 0.2) / 0.2;
-      camera.position.x = THREE.MathUtils.lerp(-2, 5, localProgress);
+      camera.position.x = THREE.MathUtils.lerp(-2, 6, localProgress);
       camera.position.y = THREE.MathUtils.lerp(3, 1, localProgress);
-      camera.position.z = THREE.MathUtils.lerp(8, 10, localProgress);
+      camera.position.z = THREE.MathUtils.lerp(8, 12, localProgress);
     } else if (progress <= 0.6) {
-      // DNA spiral view
+      // Spiral close-up with dramatic angle
       const localProgress = (progress - 0.4) / 0.2;
-      camera.position.x = THREE.MathUtils.lerp(5, 12, localProgress);
-      camera.position.y = THREE.MathUtils.lerp(1, 2, localProgress);
-      camera.position.z = THREE.MathUtils.lerp(10, -2, localProgress);
+      camera.position.x = THREE.MathUtils.lerp(6, 14, localProgress);
+      camera.position.y = THREE.MathUtils.lerp(1, 4, localProgress);
+      camera.position.z = THREE.MathUtils.lerp(12, -3, localProgress);
     } else if (progress <= 0.8) {
-      // Network view
+      // Network exploration
       const localProgress = (progress - 0.6) / 0.2;
-      camera.position.x = THREE.MathUtils.lerp(12, -12, localProgress);
-      camera.position.y = THREE.MathUtils.lerp(2, 5, localProgress);
-      camera.position.z = THREE.MathUtils.lerp(-2, 8, localProgress);
+      camera.position.x = THREE.MathUtils.lerp(14, -15, localProgress);
+      camera.position.y = THREE.MathUtils.lerp(4, 7, localProgress);
+      camera.position.z = THREE.MathUtils.lerp(-3, 10, localProgress);
     } else {
-      // Final overview
+      // Epic finale overview
       const localProgress = (progress - 0.8) / 0.2;
-      camera.position.x = THREE.MathUtils.lerp(-12, 0, localProgress);
-      camera.position.y = THREE.MathUtils.lerp(5, 15, localProgress);
-      camera.position.z = THREE.MathUtils.lerp(8, 15, localProgress);
+      camera.position.x = THREE.MathUtils.lerp(-15, 0, localProgress);
+      camera.position.y = THREE.MathUtils.lerp(7, 20, localProgress);
+      camera.position.z = THREE.MathUtils.lerp(10, 25, localProgress);
     }
     
-    camera.lookAt(0, 0, 0);
+    // Smooth look-at with slight offset for dynamic feel
+    const lookAtOffset = new THREE.Vector3(
+      Math.sin(scrollProgress * Math.PI) * 2,
+      Math.cos(scrollProgress * Math.PI * 2) * 1,
+      0
+    );
+    camera.lookAt(lookAtOffset);
   });
 
   return null;
 };
 
-// Main 3D Scene
+// Main 3D Scene with enhanced effects
 const Scene3D = ({ scrollProgress }) => {
   return (
     <Canvas 
-      camera={{ position: [0, 0, 12], fov: 75 }}
-      style={{ background: 'linear-gradient(to bottom, #0a0a0a, #1a1a2e, #16213e)' }}
+      camera={{ position: [0, 5, 15], fov: 75 }}
+      style={{ 
+        background: `linear-gradient(${180 + scrollProgress * 360}deg, #0a0a0a, #1a1a2e, #16213e, #0f3460)` 
+      }}
     >
-      {/* Enhanced lighting */}
-      <ambientLight intensity={0.2} />
-      <pointLight position={[10, 10, 10]} color="#00ffff" intensity={1.5} />
-      <pointLight position={[-10, -10, -10]} color="#ff00ff" intensity={0.8} />
+      {/* Dynamic lighting system */}
+      <ambientLight intensity={0.3} />
+      <pointLight position={[15, 15, 15]} color="#00ffff" intensity={2} />
+      <pointLight position={[-15, -15, -15]} color="#ff00ff" intensity={1.2} />
+      <pointLight position={[0, 25, 0]} color="#ffff00" intensity={1.5} />
       <spotLight 
-        position={[0, 25, 0]} 
+        position={[20, 30, 10]} 
         color="#ffffff" 
-        intensity={1.2}
-        angle={Math.PI / 4}
-        penumbra={0.3}
+        intensity={2}
+        angle={Math.PI / 3}
+        penumbra={0.5}
+        castShadow
       />
       <directionalLight
-        position={[20, 20, 5]}
+        position={[30, 30, 10]}
         color="#4488ff"
-        intensity={0.5}
+        intensity={0.8}
       />
 
-      {/* Background stars */}
-      <Stars radius={150} depth={80} count={8000} factor={6} saturation={0} fade />
+      {/* Enhanced background */}
+      <Stars radius={200} depth={100} count={12000} factor={8} saturation={0} fade />
       
-      {/* Dynamic particle field */}
+      {/* All 3D elements */}
       <DynamicParticleField scrollProgress={scrollProgress} />
-
-      {/* Professional 3D objects that build and move */}
       <BuildingStructure scrollProgress={scrollProgress} />
       <DNASpiral scrollProgress={scrollProgress} />
       <GeometricNetwork scrollProgress={scrollProgress} />
+      <FloatingText scrollProgress={scrollProgress} />
+      <EnergyOrbs scrollProgress={scrollProgress} />
 
-      {/* Central focal element that scales with scroll */}
-      <Float speed={1.5} rotationIntensity={0.8} floatIntensity={1.2}>
-        <mesh position={[0, 0, 0]} scale={1 + scrollProgress}>
-          <dodecahedronGeometry args={[1.5, 2]} />
+      {/* Enhanced central focal element */}
+      <Float speed={2} rotationIntensity={1.2} floatIntensity={1.8}>
+        <mesh position={[0, 0, 0]} scale={1.5 + scrollProgress * 0.8}>
+          <dodecahedronGeometry args={[2, 3]} />
           <meshStandardMaterial 
             color="#ffffff"
-            emissive="#2200ff"
-            emissiveIntensity={0.2 + scrollProgress * 0.3}
-            metalness={0.8}
+            emissive={new THREE.Color().setHSL(scrollProgress * 0.5, 0.8, 0.3)}
+            emissiveIntensity={0.4 + scrollProgress * 0.6}
+            metalness={0.9}
             roughness={0.1}
             transparent
-            opacity={0.9}
+            opacity={0.95}
           />
         </mesh>
       </Float>
