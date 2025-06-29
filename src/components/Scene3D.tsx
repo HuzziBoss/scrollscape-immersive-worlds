@@ -7,7 +7,7 @@ import * as THREE from 'three';
 
 // Floating geometric shapes component
 const FloatingShape = ({ position, geometry, color, scale = 1 }) => {
-  const meshRef = useRef();
+  const meshRef = useRef<THREE.Mesh>(null);
   
   useFrame((state) => {
     if (meshRef.current) {
@@ -35,7 +35,7 @@ const FloatingShape = ({ position, geometry, color, scale = 1 }) => {
 
 // Particle system component
 const ParticleField = ({ count = 1000 }) => {
-  const points = useRef();
+  const points = useRef<THREE.Points>(null);
   
   const particlesPosition = useMemo(() => {
     const positions = new Float32Array(count * 3);
